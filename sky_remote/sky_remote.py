@@ -1,6 +1,11 @@
 #!/bin/python3
+REQUIREMENTS = ['netdisco==2.2.0']
+
 import socket
 import math
+import re
+
+from netdisco.ssdp import scan
 
 class SkyRemote:
     # Sky ports , Legacy is firmware earlier than 0.6
@@ -49,7 +54,9 @@ class SkyRemote:
     BUTTON_REWIND = 71
     BUTTON_BOXOFFICE = 240
     BUTTON_SKY = 241
-  
+
+    sdp_entries = {}
+
     def __init__(self, host, port=PORT_SKY_Q):
         # Set host and port
         self.host = host
@@ -60,7 +67,7 @@ class SkyRemote:
         stream_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # Connect the socket to the port where the server is listening
-        server_address = ((self.host, self.port))
+        server_address = (self.host, self.port)
  
         #Open connection
         stream_socket.settimeout(1000)
@@ -85,9 +92,37 @@ class SkyRemote:
 
         except socket.timeout:
             print('connection timed out')
+
+
+
+    def addSDPEntry(self, type, sdpEntry):
+        self.sdp_entries[type] = sdpEntry
             
 def detect_devices():
-    # Uses UDP to return a list of Sky boxes on the network.
-    
-    
+    # Uses ssdp to return a list of Sky boxes on the network.  Uses the netdisco package to do the discovery.
+    ssdp_entries = scan()
+
+    # initialise dictionary for founfd Sky devices
+    found_entries = {}
+
+    address_regex = re.compile(r'https*://([\w\.]*):([0-9]+)/.*', re.X)
+
+    type_regex = re.compile(r'.*:(\w*Sky\w*):.*',re.X)
+
+    for entry in ssdp_entries:
+
+        # is it a sky device
+        st = entry.st
+
+        if "schemas-nds-com" in st and "Sky" in st:
+            m = address_regex.match(entry.location)
+            addr = m.group(1)
+            m = type_regex.match(st)
+            type = m.group(1)
+
+            this_remote = found_entries.get(addr, SkyRemote(addr))
+            this_remote.addSDPEntry(type, entry)
+            found_entries[addr]=this_remote
+
+    return found_entries.values()
     

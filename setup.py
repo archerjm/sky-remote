@@ -11,7 +11,7 @@ setuptools.setup(
     description="A package for sending remote commands to Sky+ HD/Sky Q boxes.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/pypa/sky_remote",
+    url="https://github.com/archerjm/sky-remote",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
